@@ -1,0 +1,28 @@
+---
+- hosts: localhost
+  become: no
+  gather_facts: no
+  tasks:
+  - name: Delete the Ansible Host
+    os_server:
+      name: "{{ server_name }}"
+      state: absent
+
+  - name: Delete the ansible security group
+    os_security_group:
+      name: "{{ server_name }}"
+      state: absent
+
+  - name: Clear the ansible router interface
+    command: "openstack router remove subnet {{ server_name }} {{ server_name }}"
+    ignore_errors: yes
+
+  - name: Delete the ansible router
+    os_router:
+      name: "{{ server_name }}"
+      state: absent
+
+  - name: Delete the ansible network
+    os_network:
+      name: "{{ server_name }}"
+      state: absent

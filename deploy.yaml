@@ -1,0 +1,82 @@
+---
+- hosts: localhost
+  become: yes
+  gather_facts: no
+  tasks:
+  - name: Install python2-shade package
+    yum:
+      name: python2-shade
+      state: latest
+
+- hosts: localhost
+  become: no
+  gather_facts: no
+  tasks:
+  - name: Create a network
+    os_network:
+      name: "{{ server_name }}"
+
+  - name: Create a subnet
+    os_subnet:
+      name: "{{ server_name }}"
+      network_name: "{{ server_name }}"
+      dns_nameservers: "{{ dns_forwarders }}"
+      cidr: 172.16.0.0/24
+
+  - name: Create the router
+    os_router:
+      name: "{{ server_name }}"
+      network: "{{ external_network }}"
+      interfaces:
+      - "{{ server_name }}"
+
+  - name: Create a security group
+    os_security_group:
+      name: "{{ server_name }}"
+      description: Security group for the Ansible Host
+
+  - name: Allow pinging the server
+    os_security_group_rule:
+      security_group: "{{ server_name }}"
+      protocol: icmp
+      port_range_min: -1
+      port_range_max: -1
+
+  - name: Allow SSH access
+    os_security_group_rule:
+      security_group: "{{ server_name }}"
+      protocol: tcp
+      port_range_min: 22
+      port_range_max: 22
+
+  - name: Create a server
+    os_server:
+      name: "{{ server_name }}"
+      network: "{{ server_name }}"
+      auto_ip: yes
+      flavor: "{{ flavor }}"
+      image: "{{ image }}"
+      key_name: "{{ key_name }}"
+      security_groups:
+      - "{{ server_name }}"
+    register: ansible_host
+
+  - name: Add the server to the internal inventory
+    add_host:
+      name: "{{ ansible_host.openstack.accessIPv4 }}"
+      groups: ansible_host
+
+- hosts: ansible_host
+  become: yes
+  gather_facts: no
+  pre_tasks:
+  - name: Wait for the the nodes to come up
+    wait_for_connection:
+  - name: Gather facts for the new nodes
+    setup:
+  - name: Verify the server can access the internet
+    command: ping -c 1 google.com
+    register: ping_result
+    retries: 10
+    until: ping_result is succeeded
+

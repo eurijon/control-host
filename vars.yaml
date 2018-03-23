@@ -1,0 +1,20 @@
+---
+
+server_name: ansible-host
+
+# openstack network list
+#   NOTE: this is the network serving Floating IP addresses.
+#         It's often called `public`, `nova` or `ext-net`.
+external_network: nova
+
+# openstack keypair list
+key_name: undercloud_key
+
+# openstack image list
+image: rhel75
+
+# openstack flavor list
+flavor: m1.small
+
+dns_forwarders: [10.35.28.28]
+
